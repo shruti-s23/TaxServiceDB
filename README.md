@@ -46,7 +46,7 @@ Synthetic data was chosen for several reasons:
        - Using functions to manipulate taxpayer information, including age calculations and eligibility recommendations.
 
 ## ER Diagram
-The file named `TaxServiceDBCF.png` shows the Crow's Foot Notation ER Diagram of the tables in the given Database.
+The file named `TaxpayerID.png` shows the normal ER Diagram and the file named `TaxServiceDBCF.png` shows the Crow's Foot Notation ER Diagram of the tables in the given Database.
 
 ## How to Use
 1. **Generate Synthetic Data**: Run the `TaxServiceDB.ipynb` notebook to create the synthetic datasets.
