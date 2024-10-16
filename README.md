@@ -52,5 +52,5 @@ Synthetic data was chosen for several reasons:
 1. **Generate Synthetic Data**: Run the `TaxServiceDB.ipynb` notebook to create the synthetic datasets.
 2. **Explore SQL Commands**: Review the `TaxServiceDB01.txt` file to understand the SQL operations performed on the datasets.
 
-Feel free to explore the repository and contribute to the development of the **TaxServiceDB** project!
+Feel free to explore the repository and the development of the **TaxServiceDB** project!
 
