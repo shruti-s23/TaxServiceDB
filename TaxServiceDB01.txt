@@ -391,6 +391,14 @@ mysql> SELECT TaxSummary.Name,
 mysql> START TRANSACTION;
 Query OK, 0 rows affected (0.00 sec)
 
+mysql> UPDATE TaxpayerInformation
+    -> SET Name = 'Ahmet Yılmaz', 
+    ->     Contact = '555-987-6543', 
+    ->     Address = 'Yeni Mah. No: 10, İstanbul, Türkiye'
+    -> WHERE TaxpayerID = 1;
+Query OK, 1 row affected (0.05 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
 mysql> COMMIT;
 Query OK, 0 rows affected (0.01 sec)
 
