@@ -1,0 +1,768 @@
+Last login: Tue Oct 15 23:47:24 on ttys000
+(base) apple@shrutis-MacBook-Pro ~ % mysql -u root -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 9
+Server version: 8.0.28 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> create database TaxServiceDB;
+Query OK, 1 row affected (0.01 sec)
+
+mysql> use TaxServiceDB;
+Database changed
+mysql> CREATE TABLE TaxpayerInformation (
+    ->     TaxpayerID INT PRIMARY KEY,
+    ->     Name VARCHAR(255),
+    ->     PAN VARCHAR(20),
+    ->     DateOfBirth DATE,
+    ->     Contact VARCHAR(15),
+    ->     Address TEXT
+    -> );
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> CREATE TABLE IncomeDetails (
+    ->     IncomeID INT PRIMARY KEY,
+    ->     TaxpayerID INT,
+    ->     FilingYear INT,
+    ->     IncomeAmount DECIMAL(15, 2),
+    ->     IncomeSource VARCHAR(50),
+    ->     FOREIGN KEY (TaxpayerID) REFERENCES TaxpayerInformation(TaxpayerID)
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> CREATE TABLE Deductions (
+    ->     DeductionID INT PRIMARY KEY,
+    ->     TaxpayerID INT,
+    ->     FilingYear INT,
+    ->     DeductionType VARCHAR(50),
+    ->     DeductionAmount DECIMAL(15, 2),
+    ->     FOREIGN KEY (TaxpayerID) REFERENCES TaxpayerInformation(TaxpayerID)
+    -> );
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> CREATE TABLE TaxFilingInformation (
+    ->     FilingID INT PRIMARY KEY,
+    ->     TaxpayerID INT,
+    ->     FilingYear INT,
+    ->     TaxableIncome DECIMAL(15, 2),
+    ->     TaxOwed DECIMAL(15, 2),
+    ->     TaxPaid DECIMAL(15, 2),
+    ->     FOREIGN KEY (TaxpayerID) REFERENCES TaxpayerInformation(TaxpayerID)
+    -> );
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> CREATE TABLE PaymentTransactions (
+    ->     PaymentID INT PRIMARY KEY,
+    ->     TaxpayerID INT,
+    ->     PaymentDate DATE,
+    ->     PaymentAmount DECIMAL(15, 2),
+    ->     PaymentMethod VARCHAR(50),
+    ->     FOREIGN KEY (TaxpayerID) REFERENCES TaxpayerInformation(TaxpayerID)
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> show tables;
++------------------------+
+| Tables_in_taxservicedb |
++------------------------+
+| Deductions             |
+| IncomeDetails          |
+| PaymentTransactions    |
+| TaxFilingInformation   |
+| TaxpayerInformation    |
++------------------------+
+5 rows in set (0.00 sec)
+
+mysql> LOAD DATA LOCAL INFILE '/Users/apple/Downloads/synthetic_taxpayer_data.csv'
+    -> INTO TABLE TaxpayerInformation
+    -> FIELDS TERMINATED BY ','
+    -> ENCLOSED BY '"'
+    -> LINES TERMINATED BY '\n'
+    -> IGNORE 1 ROWS;
+ERROR 3948 (42000): Loading local data is disabled; this must be enabled on both the client and server sides
+mysql> exit;
+Bye
+(base) apple@shrutis-MacBook-Pro ~ % mysql -u root -p --local-infile
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 13
+Server version: 8.0.28 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> SHOW VARIABLES LIKE 'local_infile';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| local_infile  | OFF   |
++---------------+-------+
+1 row in set (0.00 sec)
+
+mysql> SET GLOBAL local infile = 'ON'; 
+ERROR 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'local infile = 'ON'' at line 1
+mysql> SET GLOBAL `local_infile` = 'ON';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SHOW VARIABLES LIKE 'local_infile';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| local_infile  | ON    |
++---------------+-------+
+1 row in set (0.00 sec)
+
+mysql> use TaxServiceDB;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> show tables;
++------------------------+
+| Tables_in_taxservicedb |
++------------------------+
+| Deductions             |
+| IncomeDetails          |
+| PaymentTransactions    |
+| TaxFilingInformation   |
+| TaxpayerInformation    |
++------------------------+
+5 rows in set (0.00 sec)
+
+mysql> LOAD DATA LOCAL INFILE '/Users/apple/Downloads/synthetic_taxpayer_data.csv'
+    -> INTO TABLE TaxpayerInformation
+    -> FIELDS TERMINATED BY ','
+    -> ENCLOSED BY '"'
+    -> LINES TERMINATED BY '\n'
+    -> IGNORE 1 ROWS;
+Query OK, 100 rows affected, 71 warnings (0.04 sec)
+Records: 100  Deleted: 0  Skipped: 0  Warnings: 71
+
+mysql> SELECT * FROM TaxpayerInformation LIMIT 10;
++------------+---------------+--------------+-------------+-----------------+-------------------------------------------------------+
+| TaxpayerID | Name          | PAN          | DateOfBirth | Contact         | Address                                               |
++------------+---------------+--------------+-------------+-----------------+-------------------------------------------------------+
+|          1 | Karen Flowers | F881899G6004 | 2001-02-09  | 001-773-864-405 | 50157 Katherine Stravenue, West Daniel, NC 56247      |
+|          2 | Jessica Luna  | G532482W2003 | 1974-01-18  | 864.264.8729x39 | 6020 Newton Passage, New Taylor, NJ 70610             |
+|          3 | Michael Hogan | Z150170M3771 | 1979-09-22  | 317.688.4933    | Unit 1325 Box 0825, DPO AA 38400                      |
+|          4 | Emily Oliver  | F259738Y9552 | 1967-09-08  | (293)232-0188x3 | 07205 Scott Throughway, Robertton, AS 86056           |
+|          5 | Nicole Clark  | Q975647Y8721 | 2006-09-07  | +1-547-789-6567 | 74404 Mcmahon Manors Apt. 212, New Jennifer, MO 68949 |
+|          6 | Tim Roth      | N498173Z5552 | 1960-04-19  | 001-227-305-984 | 8494 Hudson Plain, Jennifermouth, GU 40412            |
+|          7 | Bryan Solis   | U632490Y5594 | 1976-08-20  | 001-498-702-132 | 43803 Gray Passage, Millershire, SC 00642             |
+|          8 | Kayla Martin  | X299559L2518 | 1993-12-12  | 659-268-1801x20 | 41749 Cunningham Mill, Lake Adam, FL 53385            |
+|          9 | Brandon Jones | Q117923H3229 | 1959-03-14  | +1-337-639-8662 | 163 Sanchez Manors, East Brian, MN 69967              |
+|         10 | Andrea Jones  | O991437L1099 | 1964-06-01  | +1-687-733-7900 | Unit 6039 Box 6721, DPO AE 65952                      |
++------------+---------------+--------------+-------------+-----------------+-------------------------------------------------------+
+10 rows in set (0.00 sec)
+
+mysql> LOAD DATA LOCAL INFILE '/Users/apple/Downloads/synthetic_income_data.csv'
+    -> INTO TABLE IncomeDetails
+    -> FIELDS TERMINATED BY ','
+    -> ENCLOSED BY '"'
+    -> LINES TERMINATED BY '\n'
+    -> IGNORE 1 ROWS;
+Query OK, 100 rows affected (0.01 sec)
+Records: 100  Deleted: 0  Skipped: 0  Warnings: 0
+
+mysql> LOAD DATA LOCAL INFILE '/Users/apple/Downloads/synthetic_deductions_data.csv'
+    -> INTO TABLE Deductions
+    -> FIELDS TERMINATED BY ','
+    -> ENCLOSED BY '"'
+    -> LINES TERMINATED BY '\n'
+    -> IGNORE 1 ROWS;
+Query OK, 100 rows affected (0.01 sec)
+Records: 100  Deleted: 0  Skipped: 0  Warnings: 0
+
+mysql> LOAD DATA LOCAL INFILE '/Users/apple/Downloads/synthetic_filing_data.csv'
+    -> INTO TABLE TaxFilingInformation
+    -> FIELDS TERMINATED BY ','
+    -> ENCLOSED BY '"'
+    -> LINES TERMINATED BY '\n'
+    -> IGNORE 1 ROWS;
+Query OK, 100 rows affected (0.00 sec)
+Records: 100  Deleted: 0  Skipped: 0  Warnings: 0
+
+mysql> LOAD DATA LOCAL INFILE '/Users/apple/Downloads/synthetic_payment_data.csv'
+    -> INTO TABLE PaymentTransactions
+    -> FIELDS TERMINATED BY ','
+    -> ENCLOSED BY '"'
+    -> LINES TERMINATED BY '\n'
+    -> IGNORE 1 ROWS;
+Query OK, 100 rows affected (0.01 sec)
+Records: 100  Deleted: 0  Skipped: 0  Warnings: 0
+mysql> select * from TaxpayerInformation LIMIT 2;
++------------+---------------+--------------+-------------+-----------------+--------------------------------------------------+
+| TaxpayerID | Name          | PAN          | DateOfBirth | Contact         | Address                                          |
++------------+---------------+--------------+-------------+-----------------+--------------------------------------------------+
+|          1 | Karen Flowers | F881899G6004 | 2001-02-09  | 001-773-864-405 | 50157 Katherine Stravenue, West Daniel, NC 56247 |
+|          2 | Jessica Luna  | G532482W2003 | 1974-01-18  | 864.264.8729x39 | 6020 Newton Passage, New Taylor, NJ 70610        |
++------------+---------------+--------------+-------------+-----------------+--------------------------------------------------+
+2 rows in set (0.00 sec)
+
+mysql> SELECT * FROM IncomeDetails LIMIT 2;
++----------+------------+------------+--------------+--------------+
+| IncomeID | TaxpayerID | FilingYear | IncomeAmount | IncomeSource |
++----------+------------+------------+--------------+--------------+
+|        1 |         37 |       2023 |    637529.63 | Investments  |
+|        2 |         84 |       2022 |    977119.00 | Salary       |
++----------+------------+------------+--------------+--------------+
+2 rows in set (0.00 sec)
+
+mysql> SELECT * FROM Deductions LIMIT 2;
++-------------+------------+------------+---------------+-----------------+
+| DeductionID | TaxpayerID | FilingYear | DeductionType | DeductionAmount |
++-------------+------------+------------+---------------+-----------------+
+|           1 |         60 |       2023 | 80C           |        82757.49 |
+|           2 |         53 |       2022 | 80D           |       159345.12 |
++-------------+------------+------------+---------------+-----------------+
+2 rows in set (0.00 sec)
+
+mysql> SELECT * FROM PaymentTransactions LIMIT 2;
++-----------+------------+-------------+---------------+---------------+
+| PaymentID | TaxpayerID | PaymentDate | PaymentAmount | PaymentMethod |
++-----------+------------+-------------+---------------+---------------+
+|         1 |         47 | 2023-07-09  |     260672.05 | Credit Card   |
+|         2 |         38 | 2022-09-19  |     221974.35 | UPI           |
++-----------+------------+-------------+---------------+---------------+
+2 rows in set (0.01 sec)
+
+mysql> SELECT * FROM TaxFilingInformation LIMIT 2;
++----------+------------+------------+---------------+-----------+-----------+
+| FilingID | TaxpayerID | FilingYear | TaxableIncome | TaxOwed   | TaxPaid   |
++----------+------------+------------+---------------+-----------+-----------+
+|        1 |         84 |       2022 |     598229.00 | 210436.63 | 270562.96 |
+|        2 |         97 |       2023 |     418049.97 |  26952.99 | 206684.91 |
++----------+------------+------------+---------------+-----------+-----------+
+2 rows in set (0.00 sec)
+
+mysql> SELECT t.Name, i.FilingYear, i.IncomeAmount, d.DeductionAmount
+    -> FROM TaxpayerInformation t
+    -> JOIN IncomeDetails i ON t.TaxpayerID = i.TaxpayerID
+    -> JOIN Deductions d ON t.TaxpayerID = d.TaxpayerID
+    -> WHERE i.FilingYear = 2023;
++------------------+------------+--------------+-----------------+
+| Name             | FilingYear | IncomeAmount | DeductionAmount |
++------------------+------------+--------------+-----------------+
+| Jason Wade       |       2023 |    339076.10 |        26695.41 |
+| Jason Wade       |       2023 |    339076.10 |        37287.38 |
+| Wendy Barker     |       2023 |   1005331.58 |       193362.65 |
+| Daniel Russell   |       2023 |    372537.12 |        23811.44 |
+| Daniel Russell   |       2023 |    372537.12 |       114069.84 |
+| Daniel Russell   |       2023 |    372537.12 |        38921.27 |
+| Andrea Mcintyre  |       2023 |   1263746.12 |        53880.60 |
+| Joseph Wilson    |       2023 |    424647.26 |        37647.42 |
+| Joseph Wilson    |       2023 |    424647.26 |       164110.94 |
+| Samantha Esparza |       2023 |    941291.02 |       190973.25 |
+| Kerry Campbell   |       2023 |    831860.39 |        15010.45 |
+| Kerry Campbell   |       2023 |    831860.39 |       197166.81 |
+| Kerry Campbell   |       2023 |    955185.43 |        15010.45 |
+| Kerry Campbell   |       2023 |    955185.43 |       197166.81 |
+| Cynthia Gomez    |       2023 |    460472.69 |       186125.49 |
+| Cynthia Gomez    |       2023 |    460472.69 |        60264.52 |
+| Cynthia Gomez    |       2023 |    460472.69 |        50742.30 |
+| Brian Weber      |       2023 |    483104.90 |        81209.46 |
+| Joshua Hoffman   |       2023 |   1355456.38 |       104536.62 |
+| James Harris     |       2023 |    808890.51 |       100283.35 |
+| James Wheeler    |       2023 |    445834.79 |       159345.12 |
++------------------+------------+--------------+-----------------+
+21 rows in set (0.00 sec)
+
+mysql> SELECT t.Name, i.FilingYear, 
+    ->        SUM(i.IncomeAmount) AS TotalIncome,
+    ->        SUM(d.DeductionAmount) AS TotalDeductions,
+    ->        (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) AS TaxableIncome,
+    ->        CASE
+    ->            WHEN (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) <= 500000 THEN (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) * 0.05
+    ->            WHEN (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) <= 1000000 THEN (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) * 0.20
+    ->            ELSE (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) * 0.30
+    ->        END AS TaxOwed
+    -> FROM TaxpayerInformation t
+    -> JOIN IncomeDetails i ON t.TaxpayerID = i.TaxpayerID
+    -> JOIN Deductions d ON t.TaxpayerID = d.TaxpayerID
+    -> GROUP BY t.TaxpayerID, i.FilingYear;
++-----------------------+------------+-------------+-----------------+---------------+--------------+
+| Name                  | FilingYear | TotalIncome | TotalDeductions | TaxableIncome | TaxOwed      |
++-----------------------+------------+-------------+-----------------+---------------+--------------+
+| Karen Flowers         |       2022 |  2632755.28 |       201661.74 |    2431093.54 |  729328.0620 |
+| Emily Oliver          |       2022 |  1414698.86 |        71588.25 |    1343110.61 |  402933.1830 |
+| Tim Roth              |       2021 |   373568.48 |       106873.72 |     266694.76 |   13334.7380 |
+| Daniel Russell        |       2021 |  6132497.34 |       353605.10 |    5778892.24 | 1733667.6720 |
+| Daniel Russell        |       2023 |  1117611.36 |       176802.55 |     940808.81 |  188161.7620 |
+| Anna Wilkerson        |       2021 |   875378.98 |        83500.57 |     791878.41 |  158375.6820 |
+| Calvin Roach          |       2021 |  1616495.44 |       186495.77 |    1429999.67 |  428999.9010 |
+| Brian Walker          |       2022 |  1090465.37 |       181058.93 |     909406.44 |  181881.2880 |
+| Andrea Mcintyre       |       2023 |  1263746.12 |        53880.60 |    1209865.52 |  362959.6560 |
+| Andrea Mcintyre       |       2022 |  1081575.95 |        53880.60 |    1027695.35 |  308308.6050 |
+| Eric Carpenter        |       2022 |  2240218.20 |       180392.72 |    2059825.48 |  617947.6440 |
+| Jason Wade            |       2023 |   678152.20 |        63982.79 |     614169.41 |  122833.8820 |
+| Jason Wade            |       2021 |  1798768.80 |        63982.79 |    1734786.01 |  520435.8030 |
+| Jason Wade            |       2022 |   837975.26 |        63982.79 |     773992.47 |  154798.4940 |
+| Joseph Wilson         |       2021 |  2983659.78 |       201758.36 |    2781901.42 |  834570.4260 |
+| Joseph Wilson         |       2023 |   849294.52 |       201758.36 |     647536.16 |  129507.2320 |
+| Brian Kim             |       2022 |   541340.07 |       154536.23 |     386803.84 |   19340.1920 |
+| Christopher Brown     |       2022 |  2396039.18 |       238892.64 |    2157146.54 |  647143.9620 |
+| Joshua Hoffman        |       2022 |  2532915.76 |       209073.24 |    2323842.52 |  697152.7560 |
+| Joshua Hoffman        |       2021 |   886906.82 |       104536.62 |     782370.20 |  156474.0400 |
+| Joshua Hoffman        |       2023 |  1355456.38 |       104536.62 |    1250919.76 |  375275.9280 |
+| Tammy Clayton         |       2022 |  4696902.62 |       488373.70 |    4208528.92 | 1262558.6760 |
+| Tammy Clayton         |       2021 |   813237.40 |       244186.85 |     569050.55 |  113810.1100 |
+| Jennifer Lee          |       2021 |  1639629.35 |       270868.14 |    1368761.21 |  410628.3630 |
+| Brian Weber           |       2023 |   483104.90 |        81209.46 |     401895.44 |   20094.7720 |
+| Brian Weber           |       2021 |  1032495.07 |        81209.46 |     951285.61 |  190257.1220 |
+| James Wheeler         |       2022 |  2419003.69 |       478035.36 |    1940968.33 |  582290.4990 |
+| James Wheeler         |       2023 |   445834.79 |       159345.12 |     286489.67 |   14324.4835 |
+| James Wheeler         |       2021 |   604370.37 |       159345.12 |     445025.25 |   22251.2625 |
+| Wendy Barker          |       2023 |  1005331.58 |       193362.65 |     811968.93 |  162393.7860 |
+| Samantha Esparza      |       2023 |   941291.02 |       190973.25 |     750317.77 |  150063.5540 |
+| Samantha Esparza      |       2021 |   572536.27 |       190973.25 |     381563.02 |   19078.1510 |
+| Charles Shepard       |       2022 |   664780.82 |       149739.40 |     515041.42 |  103008.2840 |
+| James Harris          |       2023 |   808890.51 |       100283.35 |     708607.16 |  141721.4320 |
+| John Gomez            |       2022 |  1161965.32 |        37786.92 |    1124178.40 |  337253.5200 |
+| Jessica Roberts       |       2022 |  1586199.40 |       246475.01 |    1339724.39 |  401917.3170 |
+| Kerry Campbell        |       2023 |  3574091.64 |       424354.52 |    3149737.12 |  944921.1360 |
+| Kerry Campbell        |       2022 |  2645086.24 |       212177.26 |    2432908.98 |  729872.6940 |
+| Patricia Cruz         |       2022 |   412962.59 |        24427.77 |     388534.82 |   19426.7410 |
+| James Garcia          |       2022 |  4266868.32 |       387912.43 |    3878955.89 | 1163686.7670 |
+| James Garcia          |       2021 |  4375519.59 |       387912.43 |    3987607.16 | 1196282.1480 |
+| Jessica Alexander     |       2022 |  2731242.96 |       349238.99 |    2382003.97 |  714601.1910 |
+| Cynthia Gomez         |       2023 |  1381418.07 |       297132.31 |    1084285.76 |  325285.7280 |
+| Cynthia Gomez         |       2022 |  3344229.33 |       297132.31 |    3047097.02 |  914129.1060 |
+| Rickey Harrison       |       2021 |  1496466.97 |        66629.95 |    1429837.02 |  428951.1060 |
+| Christopher Alexander |       2022 |   977119.00 |       158881.42 |     818237.58 |  163647.5160 |
+| Kari Russo            |       2021 |  2624389.86 |       271349.09 |    2353040.77 |  705912.2310 |
+| Noah Coleman          |       2022 |  2665984.18 |       300875.68 |    2365108.50 |  709532.5500 |
+| Meagan Adams          |       2022 |   781790.58 |       196357.16 |     585433.42 |  117086.6840 |
+| Meagan Henry          |       2021 |  1462099.24 |       117103.56 |    1344995.68 |  403498.7040 |
++-----------------------+------------+-------------+-----------------+---------------+--------------+
+50 rows in set (0.00 sec)
+
+mysql> SELECT TaxSummary.Name, 
+    ->        TaxSummary.TaxableIncome, 
+    ->        TaxSummary.TaxOwed, 
+    ->        PaymentTransactions.PaymentAmount
+    -> FROM (
+    ->     SELECT TaxpayerInformation.TaxpayerID, 
+    ->            TaxpayerInformation.Name, 
+    ->            SUM(IncomeDetails.IncomeAmount - Deductions.DeductionAmount) AS TaxableIncome,
+    ->            CASE
+    ->                WHEN (SUM(IncomeDetails.IncomeAmount - Deductions.DeductionAmount)) <= 500000 THEN (SUM(IncomeDetails.IncomeAmount - Deductions.DeductionAmount)) * 0.05
+    ->                WHEN (SUM(IncomeDetails.IncomeAmount - Deductions.DeductionAmount)) <= 1000000 THEN (SUM(IncomeDetails.IncomeAmount - Deductions.DeductionAmount)) * 0.20
+    ->                ELSE (SUM(IncomeDetails.IncomeAmount - Deductions.DeductionAmount)) * 0.30
+    ->            END AS TaxOwed
+    ->     FROM TaxpayerInformation
+    ->     JOIN IncomeDetails ON TaxpayerInformation.TaxpayerID = IncomeDetails.TaxpayerID
+    ->     JOIN Deductions ON TaxpayerInformation.TaxpayerID = Deductions.TaxpayerID
+    ->     GROUP BY TaxpayerInformation.TaxpayerID, TaxpayerInformation.Name
+    -> ) AS TaxSummary
+    -> JOIN PaymentTransactions ON TaxSummary.TaxpayerID = PaymentTransactions.TaxpayerID
+    -> WHERE TaxSummary.TaxOwed > 100000 AND PaymentTransactions.PaymentAmount < TaxSummary.TaxOwed;
++-----------------------+---------------+--------------+---------------+
+| Name                  | TaxableIncome | TaxOwed      | PaymentAmount |
++-----------------------+---------------+--------------+---------------+
+| Karen Flowers         |    2431093.54 |  729328.0620 |     235835.82 |
+| Karen Flowers         |    2431093.54 |  729328.0620 |     109785.95 |
+| Karen Flowers         |    2431093.54 |  729328.0620 |     149844.16 |
+| Karen Flowers         |    2431093.54 |  729328.0620 |     132543.77 |
+| Karen Flowers         |    2431093.54 |  729328.0620 |     174000.42 |
+| Daniel Russell        |    6719701.05 | 2015910.3150 |     160072.82 |
+| Daniel Russell        |    6719701.05 | 2015910.3150 |     207372.21 |
+| Calvin Roach          |    1429999.67 |  428999.9010 |     174738.57 |
+| Brian Walker          |     909406.44 |  181881.2880 |     161169.07 |
+| Andrea Mcintyre       |    2237560.87 |  671268.2610 |     283266.58 |
+| Andrea Mcintyre       |    2237560.87 |  671268.2610 |     223166.16 |
+| Eric Carpenter        |    2059825.48 |  617947.6440 |     288974.93 |
+| Eric Carpenter        |    2059825.48 |  617947.6440 |     291571.79 |
+| Joseph Wilson         |    3429437.58 | 1028831.2740 |     298191.73 |
+| Christopher Brown     |    2157146.54 |  647143.9620 |     128989.27 |
+| Christopher Brown     |    2157146.54 |  647143.9620 |     279604.14 |
+| Joshua Hoffman        |    4357132.48 | 1307139.7440 |      27791.71 |
+| Tammy Clayton         |    4777579.47 | 1433273.8410 |     261464.57 |
+| Tammy Clayton         |    4777579.47 | 1433273.8410 |     262124.10 |
+| Tammy Clayton         |    4777579.47 | 1433273.8410 |      61836.01 |
+| Tammy Clayton         |    4777579.47 | 1433273.8410 |     136111.85 |
+| Brian Weber           |    1353181.05 |  405954.3150 |      57294.69 |
+| James Wheeler         |    2672483.25 |  801744.9750 |     196180.94 |
+| James Wheeler         |    2672483.25 |  801744.9750 |     127832.22 |
+| Wendy Barker          |     811968.93 |  162393.7860 |      60239.87 |
+| Samantha Esparza      |    1131880.79 |  339564.2370 |     191094.76 |
+| John Gomez            |    1124178.40 |  337253.5200 |      65174.01 |
+| John Gomez            |    1124178.40 |  337253.5200 |     257177.89 |
+| Jessica Roberts       |    1339724.39 |  401917.3170 |      27714.12 |
+| Kerry Campbell        |    5582646.10 | 1674793.8300 |     249098.99 |
+| James Garcia          |    7866563.05 | 2359968.9150 |     277145.95 |
+| Cynthia Gomez         |    4131382.78 | 1239414.8340 |      96164.46 |
+| Cynthia Gomez         |    4131382.78 | 1239414.8340 |     206781.10 |
+| Christopher Alexander |     818237.58 |  163647.5160 |      83037.69 |
+| Christopher Alexander |     818237.58 |  163647.5160 |     105576.28 |
+| Kari Russo            |    2353040.77 |  705912.2310 |     251621.49 |
+| Noah Coleman          |    2365108.50 |  709532.5500 |     165749.37 |
++-----------------------+---------------+--------------+---------------+
+37 rows in set (0.00 sec)
+
+mysql> START TRANSACTION;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> COMMIT;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> CREATE VIEW TaxpayerSummary AS
+    -> SELECT t.Name, i.FilingYear, SUM(i.IncomeAmount) AS TotalIncome,
+    ->        SUM(d.DeductionAmount) AS TotalDeductions, 
+    ->        (SUM(i.IncomeAmount) - SUM(d.DeductionAmount)) AS TaxableIncome, 
+    ->        SUM(p.PaymentAmount) AS TotalTaxPaid
+    -> FROM TaxpayerInformation t
+    -> JOIN IncomeDetails i ON t.TaxpayerID = i.TaxpayerID
+    -> JOIN Deductions d ON t.TaxpayerID = d.TaxpayerID
+    -> JOIN PaymentTransactions p ON t.TaxpayerID = p.TaxpayerID
+    -> GROUP BY t.TaxpayerID, i.FilingYear;
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> SELECT * FROM TaxpayerSummary;
++-----------------------+------------+-------------+-----------------+---------------+--------------+
+| Name                  | FilingYear | TotalIncome | TotalDeductions | TaxableIncome | TotalTaxPaid |
++-----------------------+------------+-------------+-----------------+---------------+--------------+
+| Ahmet Yılmaz          |       2022 | 13163776.40 |      1008308.70 |   12155467.70 |   1604020.24 |
+| Tim Roth              |       2021 |  1120705.44 |       320621.16 |     800084.28 |    518096.50 |
+| Daniel Russell        |       2021 | 12264994.68 |       707210.20 |   11557784.48 |   2204670.18 |
+| Daniel Russell        |       2023 |  2235222.72 |       353605.10 |    1881617.62 |   1102335.09 |
+| Calvin Roach          |       2021 |  1616495.44 |       186495.77 |    1429999.67 |    349477.14 |
+| Brian Walker          |       2022 |  1090465.37 |       181058.93 |     909406.44 |    161169.07 |
+| Andrea Mcintyre       |       2023 |  2527492.24 |       107761.20 |    2419731.04 |    506432.74 |
+| Andrea Mcintyre       |       2022 |  2163151.90 |       107761.20 |    2055390.70 |    506432.74 |
+| Eric Carpenter        |       2022 |  4480436.40 |       360785.44 |    4119650.96 |   1161093.44 |
+| Joseph Wilson         |       2021 |  2983659.78 |       201758.36 |    2781901.42 |    596383.46 |
+| Joseph Wilson         |       2023 |   849294.52 |       201758.36 |     647536.16 |    596383.46 |
+| Christopher Brown     |       2022 |  4792078.36 |       477785.28 |    4314293.08 |    817186.82 |
+| Joshua Hoffman        |       2022 |  2532915.76 |       209073.24 |    2323842.52 |     55583.42 |
+| Joshua Hoffman        |       2021 |   886906.82 |       104536.62 |     782370.20 |     27791.71 |
+| Joshua Hoffman        |       2023 |  1355456.38 |       104536.62 |    1250919.76 |     27791.71 |
+| Tammy Clayton         |       2022 | 18787610.48 |      1953494.80 |   16834115.68 |   2886146.12 |
+| Tammy Clayton         |       2021 |  3252949.60 |       976747.40 |    2276202.20 |   1443073.06 |
+| Brian Weber           |       2023 |   483104.90 |        81209.46 |     401895.44 |     57294.69 |
+| Brian Weber           |       2021 |  1032495.07 |        81209.46 |     951285.61 |     57294.69 |
+| James Wheeler         |       2022 |  4838007.38 |       956070.72 |    3881936.66 |    972039.48 |
+| James Wheeler         |       2023 |   891669.58 |       318690.24 |     572979.34 |    324013.16 |
+| James Wheeler         |       2021 |  1208740.74 |       318690.24 |     890050.50 |    324013.16 |
+| Wendy Barker          |       2023 |  1005331.58 |       193362.65 |     811968.93 |     60239.87 |
+| Samantha Esparza      |       2023 |   941291.02 |       190973.25 |     750317.77 |    191094.76 |
+| Samantha Esparza      |       2021 |   572536.27 |       190973.25 |     381563.02 |    191094.76 |
+| John Gomez            |       2022 |  2323930.64 |        75573.84 |    2248356.80 |    322351.90 |
+| Jessica Roberts       |       2022 |  1586199.40 |       246475.01 |    1339724.39 |     55428.24 |
+| Kerry Campbell        |       2023 |  3574091.64 |       424354.52 |    3149737.12 |    996395.96 |
+| Kerry Campbell        |       2022 |  2645086.24 |       212177.26 |    2432908.98 |    498197.98 |
+| Patricia Cruz         |       2022 |   412962.59 |        24427.77 |     388534.82 |     80835.48 |
+| James Garcia          |       2022 |  4266868.32 |       387912.43 |    3878955.89 |    831437.85 |
+| James Garcia          |       2021 |  4375519.59 |       387912.43 |    3987607.16 |    831437.85 |
+| Cynthia Gomez         |       2023 |  2762836.14 |       594264.62 |    2168571.52 |    908836.68 |
+| Cynthia Gomez         |       2022 |  6688458.66 |       594264.62 |    6094194.04 |    908836.68 |
+| Christopher Alexander |       2022 |  1954238.00 |       317762.84 |    1636475.16 |    188613.97 |
+| Kari Russo            |       2021 |  2624389.86 |       271349.09 |    2353040.77 |    503242.98 |
+| Noah Coleman          |       2022 |  2665984.18 |       300875.68 |    2365108.50 |    662997.48 |
+| Meagan Adams          |       2022 |  1563581.16 |       392714.32 |    1170866.84 |    440562.20 |
++-----------------------+------------+-------------+-----------------+---------------+--------------+
+38 rows in set (0.01 sec)
+
+mysql> CREATE INDEX idx_taxpayer_income ON IncomeDetails(TaxpayerID, FilingYear);
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> SHOW INDEX FROM IncomeDetails;
++---------------+------------+---------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+| Table         | Non_unique | Key_name            | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment | Visible | Expression |
++---------------+------------+---------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+| IncomeDetails |          0 | PRIMARY             |            1 | IncomeID    | A         |         100 |     NULL |   NULL |      | BTREE      |         |               | YES     | NULL       |
+| IncomeDetails |          1 | idx_taxpayer_income |            1 | TaxpayerID  | A         |          61 |     NULL |   NULL | YES  | BTREE      |         |               | YES     | NULL       |
+| IncomeDetails |          1 | idx_taxpayer_income |            2 | FilingYear  | A         |          83 |     NULL |   NULL | YES  | BTREE      |         |               | YES     | NULL       |
++---------------+------------+---------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+3 rows in set (0.01 sec)
+
+mysql> CREATE INDEX idx_taxpayer_deductions ON Deductions(TaxpayerID, FilingYear);
+Query OK, 0 rows affected (0.02 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> SHOW INDEX FROM Deductions;
++------------+------------+-------------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+| Table      | Non_unique | Key_name                | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment | Visible | Expression |
++------------+------------+-------------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+| Deductions |          0 | PRIMARY                 |            1 | DeductionID | A         |         100 |     NULL |   NULL |      | BTREE      |         |               | YES     | NULL       |
+| Deductions |          1 | idx_taxpayer_deductions |            1 | TaxpayerID  | A         |          61 |     NULL |   NULL | YES  | BTREE      |         |               | YES     | NULL       |
+| Deductions |          1 | idx_taxpayer_deductions |            2 | FilingYear  | A         |          82 |     NULL |   NULL | YES  | BTREE      |         |               | YES     | NULL       |
++------------+------------+-------------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+---------+------------+
+3 rows in set (0.00 sec)
+
+mysql> SELECT TaxpayerID, SUM(IncomeAmount) / COUNT(TaxpayerID) AS AverageIncome
+    -> FROM IncomeDetails
+    -> GROUP BY TaxpayerID;
++------------+----------------+
+| TaxpayerID | AverageIncome  |
++------------+----------------+
+|          1 | 1316377.640000 |
+|          4 |  707349.430000 |
+|          6 |  373568.480000 |
+|          8 |  652373.375000 |
+|          9 |  554739.700000 |
+|         14 |  805567.633333 |
+|         17 |  875378.980000 |
+|         18 |  808247.720000 |
+|         19 | 1090465.370000 |
+|         20 | 1172661.035000 |
+|         23 | 1120109.100000 |
+|         24 |  552482.710000 |
+|         26 |  958238.575000 |
+|         31 |  876056.823333 |
+|         33 | 1391869.490000 |
+|         34 | 1088755.380000 |
+|         35 |  541340.070000 |
+|         36 |  912363.070000 |
+|         37 |  637529.630000 |
+|         39 | 1134199.880000 |
+|         40 | 1198019.590000 |
+|         45 | 1193819.740000 |
+|         46 |  645113.400000 |
+|         47 |  648746.690000 |
+|         48 |  500683.625000 |
+|         49 |  918356.670000 |
+|         51 |  819814.675000 |
+|         52 |  757799.985000 |
+|         53 |  693841.770000 |
+|         57 | 1005331.580000 |
+|         58 |  756913.645000 |
+|         61 |  664780.820000 |
+|         62 |  808890.510000 |
+|         63 |  515422.220000 |
+|         64 | 1241759.460000 |
+|         66 |  718133.410000 |
+|         67 | 1161965.320000 |
+|         68 |  583070.870000 |
+|         69 |  793099.700000 |
+|         70 | 1036529.646667 |
+|         71 |  412962.590000 |
+|         72 | 1440397.985000 |
+|         74 |  910414.320000 |
+|         76 |  787607.900000 |
+|         77 | 1496466.970000 |
+|         80 |  779153.643333 |
+|         84 |  977119.000000 |
+|         86 | 1312194.930000 |
+|         87 | 1287907.290000 |
+|         88 | 1451218.570000 |
+|         89 |  424145.420000 |
+|         90 |  666496.045000 |
+|         91 | 1200651.050000 |
+|         92 | 1390441.720000 |
+|         93 |  863828.940000 |
+|         94 |  927123.730000 |
+|         95 |  781790.580000 |
+|         97 |  972021.266667 |
+|         98 | 1462099.240000 |
+|         99 |  904548.800000 |
+|        100 |  689999.125000 |
++------------+----------------+
+61 rows in set (0.00 sec)
+
+mysql> SELECT TaxpayerID,
+    ->        SUM(IncomeAmount) AS TotalIncome,
+    ->        CASE 
+    ->            WHEN SUM(IncomeAmount) <= 500000 THEN SUM(IncomeAmount) / 10
+    ->            ELSE SUM(IncomeAmount) / 5
+    ->        END AS TaxRate
+    -> FROM IncomeDetails
+    -> GROUP BY TaxpayerID;
++------------+-------------+---------------+
+| TaxpayerID | TotalIncome | TaxRate       |
++------------+-------------+---------------+
+|          1 |  2632755.28 | 526551.056000 |
+|          4 |   707349.43 | 141469.886000 |
+|          6 |   373568.48 |  37356.848000 |
+|          8 |  1304746.75 | 260949.350000 |
+|          9 |   554739.70 | 110947.940000 |
+|         14 |  2416702.90 | 483340.580000 |
+|         17 |   875378.98 | 175075.796000 |
+|         18 |   808247.72 | 161649.544000 |
+|         19 |  1090465.37 | 218093.074000 |
+|         20 |  2345322.07 | 469064.414000 |
+|         23 |  1120109.10 | 224021.820000 |
+|         24 |  1657448.13 | 331489.626000 |
+|         26 |  1916477.15 | 383295.430000 |
+|         31 |  2628170.47 | 525634.094000 |
+|         33 |  1391869.49 | 278373.898000 |
+|         34 |  1088755.38 | 217751.076000 |
+|         35 |   541340.07 | 108268.014000 |
+|         36 |   912363.07 | 182472.614000 |
+|         37 |   637529.63 | 127505.926000 |
+|         39 |  2268399.76 | 453679.952000 |
+|         40 |  1198019.59 | 239603.918000 |
+|         45 |  4775278.96 | 955055.792000 |
+|         46 |   645113.40 | 129022.680000 |
+|         47 |   648746.69 | 129749.338000 |
+|         48 |  1001367.25 | 200273.450000 |
+|         49 |  2755070.01 | 551014.002000 |
+|         51 |  1639629.35 | 327925.870000 |
+|         52 |  1515599.97 | 303119.994000 |
+|         53 |  3469208.85 | 693841.770000 |
+|         57 |  1005331.58 | 201066.316000 |
+|         58 |  1513827.29 | 302765.458000 |
+|         61 |   664780.82 | 132956.164000 |
+|         62 |   808890.51 | 161778.102000 |
+|         63 |   515422.22 | 103084.444000 |
+|         64 |  1241759.46 | 248351.892000 |
+|         66 |  1436266.82 | 287253.364000 |
+|         67 |  1161965.32 | 232393.064000 |
+|         68 |   583070.87 | 116614.174000 |
+|         69 |   793099.70 | 158619.940000 |
+|         70 |  3109588.94 | 621917.788000 |
+|         71 |   412962.59 |  41296.259000 |
+|         72 |  2880795.97 | 576159.194000 |
+|         74 |   910414.32 | 182082.864000 |
+|         76 |  1575215.80 | 315043.160000 |
+|         77 |  1496466.97 | 299293.394000 |
+|         80 |  2337460.93 | 467492.186000 |
+|         84 |   977119.00 | 195423.800000 |
+|         86 |  1312194.93 | 262438.986000 |
+|         87 |  1287907.29 | 257581.458000 |
+|         88 |  1451218.57 | 290243.714000 |
+|         89 |   424145.42 |  42414.542000 |
+|         90 |  1332992.09 | 266598.418000 |
+|         91 |  1200651.05 | 240130.210000 |
+|         92 |  1390441.72 | 278088.344000 |
+|         93 |   863828.94 | 172765.788000 |
+|         94 |  1854247.46 | 370849.492000 |
+|         95 |   781790.58 | 156358.116000 |
+|         97 |  2916063.80 | 583212.760000 |
+|         98 |  1462099.24 | 292419.848000 |
+|         99 |  1809097.60 | 361819.520000 |
+|        100 |  2759996.50 | 551999.300000 |
++------------+-------------+---------------+
+61 rows in set (0.01 sec)
+
+mysql> SELECT 
+    ->     Name, 
+    ->     PAN,
+    ->     CONCAT(Name, ' is ', FLOOR(DATEDIFF(CURDATE(), DateOfBirth) / 365), ' years old.') AS TaxpayerAgeInfo,
+    ->     CASE 
+    ->         WHEN FLOOR(DATEDIFF(CURDATE(), DateOfBirth) / 365) < 30 THEN 'Eligible for youth tax credits.'
+    ->         WHEN FLOOR(DATEDIFF(CURDATE(), DateOfBirth) / 365) BETWEEN 30 AND 50 THEN 'Consider retirement savings options.'
+    ->         ELSE 'Time to plan for retirement and estate.'
+    ->     END AS RecommendedAction
+    -> FROM TaxpayerInformation;
++-----------------------+--------------+----------------------------------------+-----------------------------------------+
+| Name                  | PAN          | TaxpayerAgeInfo                        | RecommendedAction                       |
++-----------------------+--------------+----------------------------------------+-----------------------------------------+
+| Ahmet Yılmaz          | F881899G6004 | Ahmet Yılmaz is 23 years old.          | Eligible for youth tax credits.         |
+| Jessica Luna          | G532482W2003 | Jessica Luna is 50 years old.          | Consider retirement savings options.    |
+| Michael Hogan         | Z150170M3771 | Michael Hogan is 45 years old.         | Consider retirement savings options.    |
+| Emily Oliver          | F259738Y9552 | Emily Oliver is 57 years old.          | Time to plan for retirement and estate. |
+| Nicole Clark          | Q975647Y8721 | Nicole Clark is 18 years old.          | Eligible for youth tax credits.         |
+| Tim Roth              | N498173Z5552 | Tim Roth is 64 years old.              | Time to plan for retirement and estate. |
+| Bryan Solis           | U632490Y5594 | Bryan Solis is 48 years old.           | Consider retirement savings options.    |
+| Kayla Martin          | X299559L2518 | Kayla Martin is 30 years old.          | Consider retirement savings options.    |
+| Brandon Jones         | Q117923H3229 | Brandon Jones is 65 years old.         | Time to plan for retirement and estate. |
+| Andrea Jones          | O991437L1099 | Andrea Jones is 60 years old.          | Time to plan for retirement and estate. |
+| Melissa Phelps        | C931223C6862 | Melissa Phelps is 19 years old.        | Eligible for youth tax credits.         |
+| Kyle Walker           | S109419S3080 | Kyle Walker is 48 years old.           | Consider retirement savings options.    |
+| Walter Henson         | T433771V2078 | Walter Henson is 20 years old.         | Eligible for youth tax credits.         |
+| Daniel Russell        | S174094A4519 | Daniel Russell is 27 years old.        | Eligible for youth tax credits.         |
+| Jeffrey Rodriguez     | G311908P6951 | Jeffrey Rodriguez is 21 years old.     | Eligible for youth tax credits.         |
+| Nicole Grimes         | Y987961Q5941 | Nicole Grimes is 55 years old.         | Time to plan for retirement and estate. |
+| Anna Wilkerson        | T283952K5778 | Anna Wilkerson is 72 years old.        | Time to plan for retirement and estate. |
+| Calvin Roach          | B887935H7258 | Calvin Roach is 32 years old.          | Consider retirement savings options.    |
+| Brian Walker          | V255139X1076 | Brian Walker is 73 years old.          | Time to plan for retirement and estate. |
+| Andrea Mcintyre       | I138171B1159 | Andrea Mcintyre is 49 years old.       | Consider retirement savings options.    |
+| Joshua Rivera         | Z664862B8507 | Joshua Rivera is 43 years old.         | Consider retirement savings options.    |
+| Elizabeth Mills       | U950466A2148 | Elizabeth Mills is 43 years old.       | Consider retirement savings options.    |
+| Eric Carpenter        | Q935670O1256 | Eric Carpenter is 42 years old.        | Consider retirement savings options.    |
+| Jason Wade            | P619330G7231 | Jason Wade is 72 years old.            | Time to plan for retirement and estate. |
+| Timothy Jones         | P450108M3050 | Timothy Jones is 19 years old.         | Eligible for youth tax credits.         |
+| Joseph Wilson         | X347465X9638 | Joseph Wilson is 68 years old.         | Time to plan for retirement and estate. |
+| David Yates           | W766760D9147 | David Yates is 70 years old.           | Time to plan for retirement and estate. |
+| Roger Morgan          | A202314U3830 | Roger Morgan is 26 years old.          | Eligible for youth tax credits.         |
+| Brian Whitehead       | K127023W9833 | Brian Whitehead is 50 years old.       | Consider retirement savings options.    |
+| Catherine Garcia      | P321772I8911 | Catherine Garcia is 54 years old.      | Time to plan for retirement and estate. |
+| Stuart Lee            | V279158Q1813 | Stuart Lee is 23 years old.            | Eligible for youth tax credits.         |
+| Robin Wilson          | M598696A4953 | Robin Wilson is 62 years old.          | Time to plan for retirement and estate. |
+| Walter Stewart        | Z860133R9197 | Walter Stewart is 38 years old.        | Consider retirement savings options.    |
+| Paul Perez            | C577815K2727 | Paul Perez is 30 years old.            | Consider retirement savings options.    |
+| Brian Kim             | F151958S7232 | Brian Kim is 57 years old.             | Time to plan for retirement and estate. |
+| Jacqueline Peterson   | G662236P7345 | Jacqueline Peterson is 41 years old.   | Consider retirement savings options.    |
+| Victoria Walsh        | F563259T5752 | Victoria Walsh is 51 years old.        | Time to plan for retirement and estate. |
+| Jennifer Huber        | J621290E9042 | Jennifer Huber is 21 years old.        | Eligible for youth tax credits.         |
+| Brent Joyce           | O584265H1858 | Brent Joyce is 40 years old.           | Consider retirement savings options.    |
+| Christopher Brown     | T601047E6539 | Christopher Brown is 51 years old.     | Time to plan for retirement and estate. |
+| Amy Bowman            | F642288U4303 | Amy Bowman is 69 years old.            | Time to plan for retirement and estate. |
+| Dr. Heather Ruiz      | B496076P2391 | Dr. Heather Ruiz is 20 years old.      | Eligible for youth tax credits.         |
+| Joseph Garcia         | T908052R3247 | Joseph Garcia is 20 years old.         | Eligible for youth tax credits.         |
+| Javier Zimmerman      | K772728R2687 | Javier Zimmerman is 70 years old.      | Time to plan for retirement and estate. |
+| Joshua Hoffman        | A389205F1579 | Joshua Hoffman is 75 years old.        | Time to plan for retirement and estate. |
+| Eric Myers            | L564440K5636 | Eric Myers is 31 years old.            | Consider retirement savings options.    |
+| Ryan Coleman          | D212158G8354 | Ryan Coleman is 43 years old.          | Consider retirement savings options.    |
+| Dr. Eugene Hart       | X563477Z4075 | Dr. Eugene Hart is 64 years old.       | Time to plan for retirement and estate. |
+| Tammy Clayton         | L733701W7258 | Tammy Clayton is 60 years old.         | Time to plan for retirement and estate. |
+| Lori Park             | A868851G4787 | Lori Park is 32 years old.             | Consider retirement savings options.    |
+| Jennifer Lee          | K840515V1731 | Jennifer Lee is 66 years old.          | Time to plan for retirement and estate. |
+| Brian Weber           | J436544F8994 | Brian Weber is 49 years old.           | Consider retirement savings options.    |
+| James Wheeler         | W709931J4953 | James Wheeler is 34 years old.         | Consider retirement savings options.    |
+| Willie Hernandez      | L307236S1788 | Willie Hernandez is 55 years old.      | Time to plan for retirement and estate. |
+| Bryan Merritt         | F873253Y1598 | Bryan Merritt is 22 years old.         | Eligible for youth tax credits.         |
+| Janice Grimes         | P142280S1903 | Janice Grimes is 32 years old.         | Consider retirement savings options.    |
+| Wendy Barker          | Z550638U4971 | Wendy Barker is 56 years old.          | Time to plan for retirement and estate. |
+| Samantha Esparza      | W400019D4548 | Samantha Esparza is 41 years old.      | Consider retirement savings options.    |
+| Patricia Gibbs        | R143450V1216 | Patricia Gibbs is 51 years old.        | Time to plan for retirement and estate. |
+| William Yoder         | W748482H6666 | William Yoder is 34 years old.         | Consider retirement savings options.    |
+| Charles Shepard       | S342451Z7703 | Charles Shepard is 26 years old.       | Eligible for youth tax credits.         |
+| James Harris          | K816281J1628 | James Harris is 69 years old.          | Time to plan for retirement and estate. |
+| Jody Austin           | Z534412A9078 | Jody Austin is 69 years old.           | Time to plan for retirement and estate. |
+| Elizabeth Meyer       | G505478P1600 | Elizabeth Meyer is 25 years old.       | Eligible for youth tax credits.         |
+| Stephanie Doyle       | B787765N6862 | Stephanie Doyle is 50 years old.       | Consider retirement savings options.    |
+| Lisa Schaefer         | J409455D7423 | Lisa Schaefer is 46 years old.         | Consider retirement savings options.    |
+| John Gomez            | L320885C7230 | John Gomez is 55 years old.            | Time to plan for retirement and estate. |
+| Diane Fields          | Z831808V2292 | Diane Fields is 69 years old.          | Time to plan for retirement and estate. |
+| Jessica Roberts       | V960972D6726 | Jessica Roberts is 76 years old.       | Time to plan for retirement and estate. |
+| Kerry Campbell        | V689929P2829 | Kerry Campbell is 70 years old.        | Time to plan for retirement and estate. |
+| Patricia Cruz         | J975409X6513 | Patricia Cruz is 27 years old.         | Eligible for youth tax credits.         |
+| James Garcia          | D832157A5420 | James Garcia is 67 years old.          | Time to plan for retirement and estate. |
+| Wanda Peterson        | F745098I1708 | Wanda Peterson is 75 years old.        | Time to plan for retirement and estate. |
+| Jessica Alexander     | H915197C8148 | Jessica Alexander is 44 years old.     | Consider retirement savings options.    |
+| Donald Williams       | K577346B2118 | Donald Williams is 62 years old.       | Time to plan for retirement and estate. |
+| Cynthia Gomez         | T799517K1443 | Cynthia Gomez is 74 years old.         | Time to plan for retirement and estate. |
+| Rickey Harrison       | V159809X6988 | Rickey Harrison is 42 years old.       | Consider retirement savings options.    |
+| Anthony Johnson       | D584717C2496 | Anthony Johnson is 58 years old.       | Time to plan for retirement and estate. |
+| Bryan Jones           | R597671E3809 | Bryan Jones is 18 years old.           | Eligible for youth tax credits.         |
+| Daniel Harris         | N647252Y5091 | Daniel Harris is 74 years old.         | Time to plan for retirement and estate. |
+| Joshua Harris         | Z659832E9014 | Joshua Harris is 74 years old.         | Time to plan for retirement and estate. |
+| Denise Petersen       | Z437119X4104 | Denise Petersen is 29 years old.       | Eligible for youth tax credits.         |
+| Larry Alexander       | V360287A8870 | Larry Alexander is 66 years old.       | Time to plan for retirement and estate. |
+| Christopher Alexander | J498223J5024 | Christopher Alexander is 38 years old. | Consider retirement savings options.    |
+| Danielle Pena         | I782651V4458 | Danielle Pena is 37 years old.         | Consider retirement savings options.    |
+| Kari Russo            | U584938A7774 | Kari Russo is 68 years old.            | Time to plan for retirement and estate. |
+| Kelly Perez           | C676112W9615 | Kelly Perez is 30 years old.           | Consider retirement savings options.    |
+| John Vega             | A260107R8017 | John Vega is 49 years old.             | Consider retirement savings options.    |
+| Glenn Mckee           | V337015F6037 | Glenn Mckee is 46 years old.           | Consider retirement savings options.    |
+| Noah Coleman          | N260543Z6671 | Noah Coleman is 74 years old.          | Time to plan for retirement and estate. |
+| Kelly Benson          | Z613740Y6484 | Kelly Benson is 72 years old.          | Time to plan for retirement and estate. |
+| Robert Haney          | L330841Z4920 | Robert Haney is 22 years old.          | Eligible for youth tax credits.         |
+| Joshua Spencer        | F647431R1971 | Joshua Spencer is 37 years old.        | Consider retirement savings options.    |
+| Anna Anderson         | R172028G2967 | Anna Anderson is 70 years old.         | Time to plan for retirement and estate. |
+| Meagan Adams          | P584261L8816 | Meagan Adams is 28 years old.          | Eligible for youth tax credits.         |
+| Kathleen Arellano     | W344313W7435 | Kathleen Arellano is 42 years old.     | Consider retirement savings options.    |
+| Donald Gaines         | L191517G2019 | Donald Gaines is 39 years old.         | Consider retirement savings options.    |
+| Meagan Henry          | M729121Y9422 | Meagan Henry is 45 years old.          | Consider retirement savings options.    |
+| Robert Morales        | R301761O1929 | Robert Morales is 55 years old.        | Time to plan for retirement and estate. |
+| Victor Leonard        | R179009E5439 | Victor Leonard is 72 years old.        | Time to plan for retirement and estate. |
++-----------------------+--------------+----------------------------------------+-----------------------------------------+
+100 rows in set (0.00 sec)
+
+mysql> exit;
+Bye
